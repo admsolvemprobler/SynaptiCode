@@ -1,54 +1,118 @@
-# SynaptiCode Architecture
+# SynaptiCode (SynC): Comprehensive System Architecture
 
-## System Overview
+## 1. Core Concept Overview
 
-SynaptiCode (SynC) is designed as a biological-inspired system with several interconnected components that work together to create a living codebase ecosystem.
+SynaptiCode (SynC) transforms static codebases into adaptive ecosystems by establishing intelligent connections between code components, documentation, and external knowledge sources. The system operates on biological principles:
 
-## Core Components
+- **Code files** function as specialized cells
+- **Documentation** serves as sensory organs interfacing with external knowledge
+- **Relationships between components** form neural pathways
+- **LLM integration** provides the cognitive intelligence 
+- **Change propagation** mimics nervous system signals
 
-### Neural Network
+The system creates a self-aware codebase that detects changes, predicts impacts, suggests adaptations, and maintains documentation freshness.
 
-The core of SynaptiCode is its neural network that establishes connections between code components:
+## 2. Architecture Overview
 
-- **Connection Discovery**: Analyzes import statements, function calls, and data flow to map relationships
-- **Relationship Strength**: Measures the degree of coupling between components
-- **Temporal Memory**: Tracks how relationships evolve over time
+```
+┌───────────────────────────────────────────────────────────┐
+│                  External Knowledge Environment            │
+└───────────────────────────────┬───────────────────────────┘
+                                │
+┌───────────────────────────────▼───────────────────────────┐
+│                   Document Sensory Layer                   │
+└───────────────────────────────┬───────────────────────────┘
+                                │
+┌───────────────────────────────▼───────────────────────────┐
+│                 LLM-Powered Neural Network                 │
+└───────────────────────────────┬───────────────────────────┘
+                                │
+┌───────────────────────────────▼───────────────────────────┐
+│                     Code Body Layer                        │
+└───────────────────────────────────────────────────────────┘
+```
 
-### Sensory System
+## 3. Technical Components
 
-The documentation and external interface components that connect the codebase to the outside world:
+### 3.1 MCP Servers Required
 
-- **Documentation Monitors**: Keep documentation in sync with code changes
-- **External Knowledge Integration**: Incorporates industry best practices and standards
-- **User Interaction Patterns**: Learns from how developers interact with the system
+```python
+# List of MCP servers required for SynC
+REQUIRED_MCP_SERVERS = [
+    "code-analysis-mcp",       # Code parsing and relationship extraction
+    "document-analysis-mcp",   # Documentation parsing and analysis
+    "graph-storage-mcp",       # Relationship graph storage and queries
+    "file-watcher-mcp",        # File system change detection
+    "llm-interface-mcp",       # Interface to the LLM API
+    "knowledge-gateway-mcp",   # External knowledge acquisition
+    "adaptation-engine-mcp",   # Adaptation generation and application
+    "visualization-mcp"        # Network visualization generation
+]
+```
 
-### Cognitive Processing
+### 3.2 Core Data Structures
 
-LLM integration provides the intelligence to process changes and suggest adaptations:
-
-- **Intent Recognition**: Understands developer objectives from changes
-- **Impact Analysis**: Predicts effects of changes throughout the ecosystem
-- **Adaptation Generation**: Creates appropriate modifications for affected components
-
-### Signal Propagation
-
-The mechanism for transmitting change signals through the ecosystem:
-
-- **Change Detection**: Identifies when components are modified
-- **Signal Routing**: Determines which connected components need to be updated
-- **Implementation Suggestions**: Provides developers with adaptation options
-
-## Implementation Approach
-
-SynaptiCode is implemented as a combination of:
-
-1. **Static Analysis Tools**: For baseline relationship discovery
-2. **Runtime Monitoring**: To capture dynamic relationships
-3. **LLM Integration**: For cognitive processing and adaptation generation
-4. **Developer Interface**: For presenting insights and suggestions
-
-## Future Directions
-
-- **Self-Healing Capabilities**: Automatic resolution of simple inconsistencies
-- **Predictive Development**: Suggesting new features based on system patterns
-- **Ecosystem Evolution**: Long-term adaptation to changing requirements
+```python
+# Core entities in the SynC system
+class SynaptiCodeContext:
+    """Central context for the entire SynC system"""
+    def __init__(self, project_root, config):
+        self.project_root = project_root
+        self.config = config
+        self.neural_network = NeuralNetwork()
+        self.document_sensors = {}
+        self.code_neurons = {}
+        self.llm_interface = LLMInterface(config.llm_api_key, config.llm_model)
+        self.event_bus = EventBus()
+        self.file_watcher = FileWatcher(project_root)
+        
+class CodeNeuron:
+    """Representation of a code file in the neural network"""
+    def __init__(self, file_path, content=None):
+        self.path = file_path
+        self.content = content
+        self.imports = []          # Import relationships
+        self.exports = []          # Exposed functionality
+        self.ast = None            # Abstract syntax tree
+        self.semantic_purpose = "" # LLM-derived purpose
+        self.dependencies = []     # Dependency relationships
+        self.dependents = []       # Files depending on this
+        self.intent = ""           # Developer intent
+        
+class DocumentSensor:
+    """Representation of a documentation file"""
+    def __init__(self, file_path, content=None):
+        self.path = file_path
+        self.content = content
+        self.topics = []           # Main topics covered
+        self.related_code = []     # Related code files
+        self.knowledge_gaps = []   # Information needs
+        self.freshness_score = 0.0 # Document freshness (0-1)
+        
+class NeuralNetwork:
+    """Core graph structure managing all relationships"""
+    def __init__(self):
+        self.graph = {}            # Relationship graph
+        self.neurons = {}          # All neurons by path
+        self.sensors = {}          # All sensors by path
+        self.pathways = []         # Known signal pathways
+        
+class LLMInterface:
+    """Interface to the LLM API"""
+    def __init__(self, api_key, model_name):
+        self.api_key = api_key
+        self.model_name = model_name
+        self.client = None         # API client
+        
+    async def initialize(self):
+        """Initialize LLM API client"""
+        # Implementation depends on specific LLM service
+        
+    async def analyze_code_semantics(self, code, context):
+        """Use LLM to analyze code semantics"""
+        # Implementation using LLM API
+        
+    async def extract_intent(self, code, comments, history):
+        """Extract developer intent"""
+        # Implementation using LLM API
+```
