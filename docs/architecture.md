@@ -282,3 +282,238 @@ async def generate_adaptations(changes, affected_components, context):
     
     return adaptations
 ```
+
+## 5. External Knowledge Integration
+
+```python
+# External Knowledge Integration
+class KnowledgeGateway:
+    """Gateway to external knowledge sources"""
+    def __init__(self, context):
+        self.context = context
+        self.sources = [
+            GitHubSource(),
+            DocSiteSource(),
+            StackOverflowSource(),
+            APISiteSource(),
+            ResearchPaperSource()
+        ]
+    
+    async def gather_knowledge(self, queries):
+        """Gather knowledge from external sources"""
+        results = []
+        
+        for query in queries:
+            for source in self.sources:
+                if source.can_handle(query):
+                    source_results = await source.search(query)
+                    results.extend(source_results)
+        
+        # Use LLM to filter and prioritize results
+        filtered_results = await self.context.llm_interface.filter_knowledge(
+            results, query)
+        
+        return filtered_results
+        
+    async def integrate_knowledge(self, document_sensor, new_knowledge):
+        """Integrate new knowledge into existing documentation"""
+        # Use LLM to generate updated document content
+        updated_content = await self.context.llm_interface.integrate_knowledge(
+            document_sensor.content, new_knowledge)
+        
+        # Create update suggestion
+        return DocumentUpdateSuggestion(
+            document_path=document_sensor.path,
+            current_content=document_sensor.content,
+            suggested_content=updated_content,
+            knowledge_sources=new_knowledge.sources,
+            rationale=new_knowledge.rationale
+        )
+```
+
+## 6. MCP Server Implementations
+
+### 6.1 Code Analysis MCP
+
+```python
+# Code Analysis MCP
+from mcp import MCPServer
+import ast
+
+class CodeAnalysisMCP(MCPServer):
+    """MCP server for code analysis"""
+    
+    async def initialize(self, config):
+        """Initialize the server"""
+        self.llm_interface = LLMInterface(config.llm_api_key, config.llm_model)
+        await self.llm_interface.initialize()
+    
+    async def analyze_python_file(self, file_path, content):
+        """Analyze a Python source file"""
+        try:
+            # Parse AST
+            tree = ast.parse(content)
+            
+            # Extract imports
+            imports = self._extract_imports(tree)
+            
+            # Extract exports (functions, classes)
+            exports = self._extract_exports(tree)
+            
+            # Extract comments
+            comments = self._extract_comments(content)
+            
+            # Use LLM to analyze semantic purpose
+            semantic_analysis = await self.llm_interface.analyze_code_semantics(
+                content, {"imports": imports, "exports": exports})
+            
+            # Use LLM to extract developer intent
+            intent_analysis = await self.llm_interface.extract_intent(
+                content, comments, {})
+            
+            return {
+                "path": file_path,
+                "imports": imports,
+                "exports": exports,
+                "ast": self._serialize_ast(tree),
+                "semantic_purpose": semantic_analysis.get("purpose"),
+                "intent": intent_analysis.get("intent"),
+                "patterns": semantic_analysis.get("patterns", [])
+            }
+            
+        except SyntaxError as e:
+            return {
+                "path": file_path,
+                "error": f"Syntax error: {str(e)}",
+                "imports": [],
+                "exports": []
+            }
+    
+    # Helper methods for extraction
+    def _extract_imports(self, tree):
+        """Extract imports from AST"""
+        imports = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for name in node.names:
+                    imports.append({"module": name.name, "alias": name.asname})
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module
+                for name in node.names:
+                    imports.append({
+                        "module": module,
+                        "name": name.name,
+                        "alias": name.asname
+                    })
+        return imports
+    
+    # Additional helper methods...
+```
+
+### 6.2 LLM Interface MCP
+
+```python
+# LLM Interface MCP
+from mcp import MCPServer
+import aiohttp
+import json
+
+class LLMInterfaceMCP(MCPServer):
+    """MCP server for LLM API interactions"""
+    
+    async def initialize(self, config):
+        """Initialize the server"""
+        self.api_key = config.get("llm_api_key")
+        self.model = config.get("llm_model", "claude-3-opus-20240229")
+        self.base_url = config.get("llm_base_url", "https://api.anthropic.com/v1/messages")
+        self.headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+    
+    async def analyze_code(self, code, context=None):
+        """Analyze code using LLM"""
+        system_prompt = "You are a code analysis expert analyzing code for a living codebase system."
+        user_prompt = f"""
+        Analyze this code to determine its purpose, function, and developer intent:
+        
+        ```
+        {code}
+        ```
+        
+        Additional context: {context or "None provided"}
+        
+        Provide a JSON response with these fields:
+        - purpose: Primary purpose of this code
+        - functions: Key functionality implemented
+        - patterns: Design patterns or architectural approaches used
+        - dependencies: Likely dependencies on other components
+        - intent: Developer intent based on code style and comments
+        """
+        
+        response = await self._call_llm_api(system_prompt, user_prompt)
+        return self._parse_response(response)
+    
+    async def generate_adaptation(self, original_code, change_description, relationship_type):
+        """Generate adaptation for affected code"""
+        system_prompt = "You are an expert software developer creating adaptation suggestions for a living codebase system."
+        user_prompt = f"""
+        I need to update code based on changes in a related component.
+        
+        Original code to adapt:
+        ```
+        {original_code}
+        ```
+        
+        Changes in related component:
+        {change_description}
+        
+        Relationship type: {relationship_type}
+        
+        Provide a JSON response with these fields:
+        - adapted_code: Updated version of the original code
+        - confidence: Confidence score (0-1) in this adaptation
+        - rationale: Explanation of the changes made
+        - risks: Potential risks or side effects of this adaptation
+        """
+        
+        response = await self._call_llm_api(system_prompt, user_prompt)
+        return self._parse_response(response)
+    
+    async def _call_llm_api(self, system_prompt, user_prompt):
+        """Call the LLM API with given prompts"""
+        data = {
+            "model": self.model,
+            "system": system_prompt,
+            "messages": [
+                {"role": "user", "content": user_prompt}
+            ],
+            "max_tokens": 2000
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(self.base_url, headers=self.headers, json=data) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"LLM API error: {response.status} - {error_text}")
+    
+    def _parse_response(self, response):
+        """Parse the LLM API response"""
+        try:
+            if 'content' in response:
+                content = response['content'][0]['text']
+                # Extract JSON from response
+                json_start = content.find('{')
+                json_end = content.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = content[json_start:json_end]
+                    return json.loads(json_str)
+                return {"error": "No JSON found in response", "raw_response": content}
+            return {"error": "Unexpected response format", "raw_response": response}
+        except Exception as e:
+            return {"error": str(e), "raw_response": response}
+```
